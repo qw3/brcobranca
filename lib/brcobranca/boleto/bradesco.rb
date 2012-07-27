@@ -34,13 +34,13 @@ module Brcobranca
       def numero_documento=(valor)
         @numero_documento = valor.to_s.rjust(11,'0') unless valor.nil?
       end
-
+      
       # Nosso número para exibir no boleto.
       # @return [String]
       # @example
       #  boleto.nosso_numero_boleto #=> ""06/00000004042-8"
       def nosso_numero_boleto
-        "#{self.carteira}/#{self.numero_documento}-#{self.nosso_numero_dv}"
+        "#{self.carteira}/#{self.numero_documento}-#{self.novo_nosso_numero_dv}"
       end
 
       # Agência + conta corrente do cliente para exibir no boleto.
@@ -63,6 +63,35 @@ module Brcobranca
       # @return [String] 25 caracteres numéricos.
       def codigo_barras_segunda_parte
         "#{self.agencia}#{self.carteira}#{self.numero_documento}#{self.conta_corrente}0"
+      end
+      
+      def novo_nosso_numero_dv
+        return calcula_modulo( "#{self.carteira.rjust( 2, "0" )}#{self.numero_documento}" )
+      end
+      
+      def calcula_modulo numero
+        total = self.multiplicador(numero, [2,3,4,5,6,7])
+        resto = total % 11
+        case resto
+          when 0
+            return 0
+          when 1
+            return 'P'
+          else
+            return (11 - (total % 11 ) )
+        end
+      end
+      
+      def multiplicador(numero, fatores)
+        total = 0
+        multiplicador_posicao = 0
+
+        numero.split(//).reverse!.each do |caracter|
+          fator = fatores[multiplicador_posicao]
+          total += (caracter.to_i * fator)
+          multiplicador_posicao = (multiplicador_posicao < (fatores.size - 1)) ? (multiplicador_posicao + 1) : 0
+        end
+        return total
       end
     end
   end
